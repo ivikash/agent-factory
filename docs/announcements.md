@@ -20,8 +20,10 @@ gate.
 
 **How it works.** A request enters a Strands Graph. The first node asks the decider two questions:
 what kind of request is this (feature, bugfix, question), and is it specific enough to build without
-asking. The decider answers in about 500 ms on a CPU, and every answer carries a confidence. Below
-0.9, the graph routes to a clarify node that asks three questions and stops. Above it, the graph
+asking. The decider answers in about 700 ms on eight CPU cores, and every answer carries a
+confidence. Below the floor (0.8 on intent, 0.5 on actionable), the graph routes to a clarify node
+that asks three questions and stops. The floor came from measuring, not guessing: a precise feature
+request scored 0.90, a precise bug report 0.97, "make it better" 0.44. Above it, the graph
 runs plan, code and review on Claude Haiku 5.5, the cheap tier on Bedrock ($0.11 per million input
 tokens), with the reviewer returning structured output so the revision loop is a deterministic edge
 with a bound.
@@ -59,7 +61,7 @@ aws/agent-toolkit-for-aws.
 Built a Software Agent Factory on AWS this week:
 
 - Strands Graph of cheap Bedrock models (Claude Haiku 5.5): plan, code, review
-- Strands Decider 2B at the gate: "feature or bug?" "specific enough?" in 500 ms with a calibrated confidence. Below 0.9 it asks instead of guessing
+- Strands Decider 2B at the gate: "feature or bug?" "specific enough?" in 700 ms on CPU with a calibrated confidence. Not confident? It asks instead of guessing
 - Lambda + function URL, GitHub Actions with OIDC, staging on push, production on a tag, alarm bake per Region
 - OpenTelemetry to CloudWatch, 3 alarms, 1 dashboard, Omni-ready
 
@@ -73,10 +75,10 @@ I spent this week building something small and complete: a Software Agent Factor
 
 The idea: agents make dozens of tiny decisions per task, and most frameworks spend a frontier
 model's tokens on each one. Strands Decider, a 2B open-weight "system one" model from Strands
-Labs, answers those choices in about half a second with a calibrated confidence. So the factory
+Labs, answers those choices in under a second on a CPU with a calibrated confidence. So the factory
 puts it at the gate. Two questions per request: what kind of request is this, and is it specific
-enough to build. Below 0.9 confidence, the graph asks three clarifying questions and stops. Above
-it, cheap Bedrock models (Claude Haiku 5.5) plan, write and review the code, with the review loop
+enough to build. When the confidence is below the floor, the graph asks three clarifying questions
+and stops. Above it, cheap Bedrock models (Claude Haiku 5.5) plan, write and review the code, with the review loop
 bounded by a deterministic edge.
 
 What made it feel like production rather than a demo:
@@ -100,8 +102,8 @@ Repository: https://github.com/ivikash/agent-factory
 A Strands Graph that turns a one-line software request into a plan, code and a review.
 
 - **System 1 gate.** `TriageNode` asks Strands Decider 2B (over HTTP) or a Bedrock stand-in two
-  questions and writes a JSON verdict. Below `DECIDER_CONFIDENCE_FLOOR` (0.9) the graph routes to
-  `clarify`.
+  questions and writes a JSON verdict. Below `DECIDER_CONFIDENCE_FLOOR` (0.8 on intent) or 0.5 on
+  actionable, the graph routes to `clarify`.
 - **System 2 workers.** `plan`, `code` and `review` on Claude Haiku 5.5 through Bedrock inference
   profiles. `plan` and `review` return structured output. The review loop is bounded by
   `MAX_REVIEW_ROUNDS`.

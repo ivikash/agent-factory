@@ -12,7 +12,7 @@ def test_defaults_are_the_cheap_tier(settings: Settings) -> None:
         == settings.review_model_id
         == "us.anthropic.claude-haiku-5-5"
     )
-    assert settings.decider_url == "" and settings.confidence_floor == 0.9
+    assert settings.decider_url == "" and settings.confidence_floor == 0.8
     assert settings.max_review_rounds == 2
 
 

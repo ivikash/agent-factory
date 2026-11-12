@@ -39,9 +39,12 @@ class Settings:
         default_factory=lambda: _env("MODEL_DECIDER", "us.anthropic.claude-haiku-5-5")
     )
     decider_timeout_s: float = field(default_factory=lambda: float(_env("DECIDER_TIMEOUT_S", "10")))
-    # Below this confidence the factory asks for clarification instead of building. Strands Decider
-    # answers at 0.9 or above are right about 95 percent of the time on unseen classification tasks.
-    confidence_floor: float = field(default_factory=lambda: float(_env("DECIDER_CONFIDENCE_FLOOR", "0.9")))
+    # Below this intent confidence the factory asks for clarification instead of building. Strands
+    # Decider's published figure is 95 percent accuracy at 0.9 or above on binary tasks. On this
+    # three-way intent choice a well-specified feature request measured 0.90 on 2026-11-12, so the
+    # floor sits at 0.8: a wrong intent label costs little (the planner reads the request anyway),
+    # while the actionable question below is the gate that saves System 2 tokens.
+    confidence_floor: float = field(default_factory=lambda: float(_env("DECIDER_CONFIDENCE_FLOOR", "0.8")))
 
     # Graph limits. A review loop that never approves stops here.
     max_review_rounds: int = field(default_factory=lambda: int(_env("MAX_REVIEW_ROUNDS", "2")))

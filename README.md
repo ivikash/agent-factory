@@ -14,8 +14,8 @@ request ──▶ triage (System 1) ──┬─ confident ──▶ plan ──
 
 - **System 1 at the gate.** The triage node asks the decider two questions: what kind of request is
   this (feature, bugfix, question), and is it specific enough to build without asking. Every answer
-  carries a calibrated confidence. Below 0.9 the factory asks three clarifying questions instead of
-  spending model tokens on a guess.
+  carries a calibrated confidence. Below the floor (0.8 on intent, 0.5 on actionable) the factory
+  asks three clarifying questions instead of spending model tokens on a guess.
 - **System 2 in the nodes.** Claude Haiku 5.5 on Bedrock plans, writes and reviews. The reviewer
   returns structured output, so the review loop is a deterministic edge, bounded by
   `MAX_REVIEW_ROUNDS`.
@@ -49,7 +49,7 @@ That is what the Lambda deployment uses, because a 2B model does not fit in a fu
 |---|---|---|
 | `MODEL_PLAN`, `MODEL_CODE`, `MODEL_REVIEW` | `us.anthropic.claude-haiku-5-5` | Bedrock inference profile per role |
 | `DECIDER_URL` | empty | Strands Decider server. Empty means the Bedrock stand-in. |
-| `DECIDER_CONFIDENCE_FLOOR` | `0.9` | Below this, clarify instead of build |
+| `DECIDER_CONFIDENCE_FLOOR` | `0.8` | Intent confidence below this clarifies instead of building. Measured on 2026-11-12 against Strands Decider 2B on CPU (about 700 ms per question): a precise feature request scored 0.90, a precise bug report 0.97, "make it better" 0.44, so 0.9 would have sent the feature request to clarify. |
 | `MAX_REVIEW_ROUNDS` | `2` | Review loop bound |
 | `GRAPH_TIMEOUT_S` | `240` | Whole-graph timeout |
 | `STAGE`, `SERVICE_VERSION` | `local`, `dev` | Set by the deploy pipeline; carried on every trace |
