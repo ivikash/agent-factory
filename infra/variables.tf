@@ -102,6 +102,12 @@ variable "alert_email" {
   default     = ""
 }
 
+variable "create_function_url" {
+  description = "Create the function URL. False when something else fronts the function (API Gateway, an ALB) or the target environment has no function URLs."
+  type        = bool
+  default     = true
+}
+
 variable "function_url_auth" {
   description = "NONE for a public URL (the health check needs to reach it), AWS_IAM otherwise."
   type        = string

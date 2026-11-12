@@ -43,7 +43,8 @@ project_test() {
 }
 
 # ---- PROJECT: build the zip ------------------------------------------------
-# Lambda runtime python3.12 on x86_64: dependencies are resolved for that platform,
+# Lambda runtime python3.12. Dependencies are resolved for the Lambda platform
+# (LAMBDA_PLATFORM, default x86_64-manylinux2014; aarch64-manylinux2014 for Graviton),
 # not for the machine running this script, then the package itself is added.
 project_build_zip() {
   ensure_uv
@@ -52,7 +53,7 @@ project_build_zip() {
   # Dependencies as wheels for the Lambda platform, then this package built once as a wheel.
   uv export --no-dev --no-emit-project --no-hashes --quiet -o build/requirements.txt
   uv pip install --quiet --target build/zip --python-version 3.12 \
-    --python-platform x86_64-manylinux2014 --only-binary :all: -r build/requirements.txt
+    --python-platform "${LAMBDA_PLATFORM:-x86_64-manylinux2014}" --only-binary :all: -r build/requirements.txt
   uv build --wheel --quiet -o build/wheel
   uv pip install --quiet --target build/zip --python-version 3.12 --no-deps build/wheel/*.whl
   find build/zip -name '__pycache__' -type d -prune -exec rm -rf {} +

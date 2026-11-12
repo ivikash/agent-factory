@@ -12,7 +12,7 @@ output "function_version" {
 
 output "health_url" {
   description = "Read by deploy-stage.yml after apply and handed to the bake as the health URL."
-  value       = aws_lambda_function_url.this.function_url
+  value       = var.create_function_url ? aws_lambda_function_url.this[0].function_url : ""
 }
 
 output "log_group" {

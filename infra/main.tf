@@ -140,12 +140,13 @@ resource "aws_lambda_function" "this" {
 }
 
 resource "aws_lambda_function_url" "this" {
+  count              = var.create_function_url ? 1 : 0
   function_name      = aws_lambda_function.this.function_name
   authorization_type = var.function_url_auth
 }
 
 resource "aws_lambda_permission" "url" {
-  count                  = var.function_url_auth == "NONE" ? 1 : 0
+  count                  = var.create_function_url && var.function_url_auth == "NONE" ? 1 : 0
   statement_id           = "AllowPublicFunctionUrl"
   action                 = "lambda:InvokeFunctionUrl"
   function_name          = aws_lambda_function.this.function_name
