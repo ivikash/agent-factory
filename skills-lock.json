@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "skills": {
+    "deploy-from-github": {
+      "source": "../../.kiro/crew/workspace/agent-toolkit-for-aws/plugins/aws-startup-advisor/skills",
+      "sourceType": "local",
+      "computedHash": "502a4e64c09afbe8b652b905630d00a6bed7bfc1519a0be1868fa320afb58114",
+      "installMode": "copy"
+    },
+    "observe-on-aws": {
+      "source": "../../.kiro/crew/workspace/agent-toolkit-for-aws/plugins/aws-startup-advisor/skills",
+      "sourceType": "local",
+      "computedHash": "e45e9285d82dc4dc4e8832f54ab1a8aba5c2df6045bae6d4cf83ab419fbf441b",
+      "installMode": "copy"
+    }
+  }
+}
