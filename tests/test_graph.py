@@ -17,6 +17,7 @@ def test_confident_request_goes_plan_code_review_publish(settings: Settings) -> 
     assert outcome.path == ["triage", "plan", "code", "review", "publish"]
     assert outcome.triage is not None and outcome.triage.confident and outcome.triage.intent == "feature"
     assert "print('hello')" in outcome.output
+    assert not outcome.output.startswith("code:"), "FunctionNode output is unwrapped, no node-name prefix"
     assert [kind for kind, _ in decider.calls] == ["choose", "yes_no"]
 
 

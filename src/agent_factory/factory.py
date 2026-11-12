@@ -43,9 +43,18 @@ class Review(BaseModel):
     findings: list[str] = Field(description="Specific problems, empty when approved.")
 
 
+def _node_text(node: Any) -> str:
+    """The text a node produced, whether it is an agent or a FunctionNode (one nested result)."""
+    result = node.result
+    inner = getattr(result, "results", None)
+    if isinstance(inner, dict) and len(inner) == 1:
+        return str(next(iter(inner.values())).result)
+    return str(result)
+
+
 def _text_of(state: GraphState, node_id: str) -> str:
     node = state.results.get(node_id)
-    return str(node.result) if node else ""
+    return _node_text(node) if node else ""
 
 
 def _triage_of(state: GraphState) -> Triage | None:
@@ -199,8 +208,8 @@ def run(request: str, graph=None, settings: Settings | None = None) -> Outcome:
     result = graph(request)
     path = [node.node_id for node in result.execution_order]
     final = "clarify" if "clarify" in path else "code"
-    output = str(result.results[final].result) if final in result.results else ""
-    triage_text = str(result.results["triage"].result) if "triage" in result.results else ""
+    output = _node_text(result.results[final]) if final in result.results else ""
+    triage_text = _node_text(result.results["triage"]) if "triage" in result.results else ""
     return Outcome(
         status="completed" if result.status == Status.COMPLETED else result.status.value,
         path=path,
