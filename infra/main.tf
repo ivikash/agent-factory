@@ -36,6 +36,17 @@ provider "aws" {
 
 locals {
   name = "${var.app_name}-${var.stage}"
+  # No layer for this Region (or an emulator without the public layer) means no
+  # OpenTelemetry wrapper either: the wrapper only exists inside the layer.
+  adot_layer = lookup(var.adot_layer_arns, var.region, "")
+  otel_environment = local.adot_layer == "" ? {} : {
+    AWS_LAMBDA_EXEC_WRAPPER              = "/opt/otel-instrument"
+    OTEL_AWS_APPLICATION_SIGNALS_ENABLED = "false"
+    OTEL_SERVICE_NAME                    = var.app_name
+    OTEL_RESOURCE_ATTRIBUTES             = "deployment.environment.name=${var.stage},service.version=${var.image_tag},service.namespace=${var.app_name}"
+    OTEL_TRACES_SAMPLER                  = "parentbased_traceidratio"
+    OTEL_TRACES_SAMPLER_ARG              = var.stage == "production" ? "0.1" : "1.0"
+  }
 }
 
 data "aws_caller_identity" "current" {}
@@ -95,12 +106,17 @@ resource "aws_iam_role_policy" "function" {
 }
 
 resource "aws_lambda_function" "this" {
-  function_name    = local.name
-  role             = aws_iam_role.function.arn
-  handler          = var.handler
-  runtime          = var.runtime
-  architectures    = [var.architecture]
-  filename         = var.artifact_path
+  function_name = local.name
+  role          = aws_iam_role.function.arn
+  handler       = var.handler
+  runtime       = var.runtime
+  architectures = [var.architecture]
+  # The zip is uploaded inline from artifact_path, or referenced in S3 when
+  # artifact_s3_bucket is set (the bucket must be in this Region on real AWS).
+  # Either way the hash comes from the local file, so a new build is a change.
+  filename         = var.artifact_s3_bucket == "" ? var.artifact_path : null
+  s3_bucket        = var.artifact_s3_bucket == "" ? null : var.artifact_s3_bucket
+  s3_key           = var.artifact_s3_bucket == "" ? null : var.artifact_s3_key
   source_code_hash = filebase64sha256(var.artifact_path)
   memory_size      = var.memory_mb
   timeout          = var.timeout_seconds
@@ -108,21 +124,16 @@ resource "aws_lambda_function" "this" {
 
   # OpenTelemetry on Lambda: the ADOT layer plus the exec wrapper. Application
   # Signals stays off explicitly (the wrapper defaults it on).
-  layers = [var.adot_layer_arns[var.region]]
+  layers = compact([local.adot_layer])
 
   environment {
     variables = merge(
       {
-        APP_NAME                             = var.app_name
-        STAGE                                = var.stage
-        SERVICE_VERSION                      = var.image_tag
-        AWS_LAMBDA_EXEC_WRAPPER              = "/opt/otel-instrument"
-        OTEL_AWS_APPLICATION_SIGNALS_ENABLED = "false"
-        OTEL_SERVICE_NAME                    = var.app_name
-        OTEL_RESOURCE_ATTRIBUTES             = "deployment.environment.name=${var.stage},service.version=${var.image_tag},service.namespace=${var.app_name}"
-        OTEL_TRACES_SAMPLER                  = "parentbased_traceidratio"
-        OTEL_TRACES_SAMPLER_ARG              = var.stage == "production" ? "0.1" : "1.0"
+        APP_NAME        = var.app_name
+        STAGE           = var.stage
+        SERVICE_VERSION = var.image_tag
       },
+      local.otel_environment,
       var.environment,
     )
   }

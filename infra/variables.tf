@@ -23,6 +23,18 @@ variable "artifact_path" {
   type        = string
 }
 
+variable "artifact_s3_bucket" {
+  description = "Optional. Deploy the function code from this S3 bucket (same Region as the function) instead of uploading artifact_path inline."
+  type        = string
+  default     = ""
+}
+
+variable "artifact_s3_key" {
+  description = "Object key of function.zip when artifact_s3_bucket is set."
+  type        = string
+  default     = ""
+}
+
 variable "app_name" {
   description = "Application name. Must match the bootstrap's app_name."
   type        = string

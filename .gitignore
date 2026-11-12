@@ -11,3 +11,5 @@ build/
 terraform.tfstate.d/
 .bootstrap-*.json
 .env
+zz_emulator_override.tf
+.aws-emulator/
