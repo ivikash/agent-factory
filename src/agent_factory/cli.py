@@ -9,7 +9,15 @@ import sys
 
 from agent_factory import telemetry
 from agent_factory.config import Settings
-from agent_factory.factory import run
+from agent_factory.factory import make_decider, run
+from agent_factory.nodes import Triage, triage
+
+
+def _triage_line(verdict: Triage) -> str:
+    return (
+        f"triage: {verdict.intent} ({verdict.intent_confidence:.2f}), "
+        f"actionable {verdict.actionable:.2f}, confident={verdict.confident}"
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -18,6 +26,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("request", help="what to build, in one sentence")
     parser.add_argument("--json", action="store_true", help="print the full outcome as JSON")
+    parser.add_argument(
+        "--triage-only",
+        action="store_true",
+        help="ask the System 1 decider only and print its verdict, spending no System 2 tokens",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -26,6 +39,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     settings = Settings()
     telemetry.setup(settings)
+
+    if args.triage_only:
+        verdict = triage(make_decider(settings), args.request, settings.confidence_floor)
+        print(verdict.to_json() if args.json else _triage_line(verdict))
+        return 0
+
     outcome = run(args.request, settings=settings)
 
     if args.json:
