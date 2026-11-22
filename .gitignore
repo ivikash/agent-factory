@@ -13,3 +13,4 @@ terraform.tfstate.d/
 .env
 zz_emulator_override.tf
 .aws-emulator/
+brag-output*/
